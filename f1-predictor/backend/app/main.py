@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.database import init_db
 from app.utils.logging_config import setup_logging
-from app.api.routes import health, races, drivers, teams, backtests, models_route, seasons, explain
+from app.api.routes import health, races, drivers, teams, backtests, models_route, seasons, explain, championship
 
 settings = get_settings()
 setup_logging(settings.log_level)
@@ -38,6 +38,7 @@ app.include_router(backtests.router)
 app.include_router(models_route.router)
 app.include_router(seasons.router)
 app.include_router(explain.router)
+app.include_router(championship.router)
 
 @app.get("/")
 async def root():
