@@ -1,0 +1,1 @@
+{"key": "https://api.jolpi.ca/ergast/f1/2021/12/pitstops.json?limit=100", "data": {"MRData": {"xmlns": "", "series": "f1", "url": "https://api.jolpi.ca/ergast/f1/2021/12/pitstops.json", "limit": "100", "offset": "0", "total": "0", "RaceTable": {"season": "2021", "round": "12", "Races": []}}}, "created_at": 1789206824.442371, "expires_at": 1789293224.442371}

@@ -1,0 +1,1 @@
+{"key": "https://api.jolpi.ca/ergast/f1/2026/19/results.json?", "data": {"MRData": {"xmlns": "", "series": "f1", "url": "https://api.jolpi.ca/ergast/f1/2026/19/results.json", "limit": "30", "offset": "0", "total": "0", "RaceTable": {"season": "2026", "round": "19", "Races": []}}}, "created_at": 1789206583.7193358, "expires_at": 1789292983.7193358}

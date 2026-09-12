@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment & secrets
+.env
+.env.*
+*.key
+
+# Data (regenerable: DB, caches, raw downloads)
+data/db/
+data/cache/
+data/raw/
+*.db
+*.sqlite3
+
+# Logs
+logs/
+
+# Trained models (regenerable via scripts/train_models.py)
+models/trained/
+*.joblib
+*.ubj
+*.json.xz
+
+# Node / frontend
+node_modules/
+frontend/dist/
+*.local
+
+# Notebooks
+.ipynb_checkpoints/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

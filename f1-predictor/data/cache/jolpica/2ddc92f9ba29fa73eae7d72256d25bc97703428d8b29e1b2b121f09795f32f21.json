@@ -1,0 +1,1 @@
+{"key": "https://api.jolpi.ca/ergast/f1/2026/15/qualifying.json?", "data": {"MRData": {"xmlns": "", "series": "f1", "url": "https://api.jolpi.ca/ergast/f1/2026/15/qualifying.json", "limit": "30", "offset": "0", "total": "0", "RaceTable": {"season": "2026", "round": "15", "Races": []}}}, "created_at": 1789206575.237013, "expires_at": 1789292975.237013}

@@ -1,0 +1,1 @@
+{"key": "https://api.jolpi.ca/ergast/f1/2026/19/pitstops.json?limit=100", "data": {"MRData": {"xmlns": "", "series": "f1", "url": "https://api.jolpi.ca/ergast/f1/2026/19/pitstops.json", "limit": "100", "offset": "0", "total": "0", "RaceTable": {"season": "2026", "round": "19", "Races": []}}}, "created_at": 1789207187.808983, "expires_at": 1789293587.808983}
