@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Race, PredictionResponse, BacktestResult } from '../types';
+import { Race, PredictionResponse, BacktestResult, ChampionshipResponse } from '../types';
 
 const api = axios.create({
   baseURL: '/api',
@@ -54,5 +54,37 @@ export const fetchBacktests = async (): Promise<BacktestResult[]> => {
 
 export const fetchModelsInfo = async (): Promise<any> => {
   const res = await api.get('/models');
+  return res.data;
+};
+
+export const simulateChampionship = async (
+  season: number,
+  drivers: Array<{
+    driver_id: string;
+    code: string;
+    full_name: string;
+    team_id: string;
+    team_name: string;
+    current_points: number;
+  }>,
+  remainingRaces: Array<{
+    race_id: string;
+    name: string;
+    round_number: number;
+    total_laps?: number;
+    is_sprint_weekend?: boolean;
+    circuit_deg_index?: number;
+    safety_car_prob?: number;
+  }>,
+  nSimulations: number = 5000,
+  seed: number = 42
+): Promise<ChampionshipResponse> => {
+  const res = await api.post<ChampionshipResponse>('/championship/simulate', {
+    season,
+    drivers,
+    remaining_races: remainingRaces,
+    n_simulations: nSimulations,
+    seed,
+  });
   return res.data;
 };

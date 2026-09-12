@@ -5,6 +5,7 @@ import { NextRace } from './pages/NextRace';
 import { RaceDetail } from './pages/RaceDetail';
 import { Backtesting } from './pages/Backtesting';
 import { ModelInfo } from './pages/ModelInfo';
+import { Championship } from './pages/Championship';
 
 export const App: React.FC = () => {
   return (
@@ -14,6 +15,7 @@ export const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<NextRace />} />
           <Route path="/races/:raceId" element={<RaceDetail />} />
+          <Route path="/championship" element={<Championship />} />
           <Route path="/backtesting" element={<Backtesting />} />
           <Route path="/models" element={<ModelInfo />} />
         </Routes>

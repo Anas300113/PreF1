@@ -100,6 +100,35 @@ export interface BaselineComparison {
   beats_on_mae: boolean;
 }
 
+export interface ChampionshipDriverStanding {
+  driver_id: string;
+  code: string;
+  team_id: string;
+  championship_win_probability: number;
+  expected_championship_points: number;
+  expected_championship_position: number;
+  position_distribution: Record<string, number>;
+}
+
+export interface ChampionshipConstructorStanding {
+  team_id: string;
+  championship_win_probability: number;
+  expected_championship_points: number;
+}
+
+export interface ChampionshipResponse {
+  season: number;
+  races_remaining: number;
+  n_simulations: number;
+  driver_standings: ChampionshipDriverStanding[];
+  constructor_standings: ChampionshipConstructorStanding[];
+  convergence_report: {
+    n_simulations: number;
+    n_races: number;
+    n_drivers: number;
+  };
+}
+
 export interface BacktestResult {
   season: number;
   n_races: number;

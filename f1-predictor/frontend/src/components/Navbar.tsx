@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Activity, Flag, BarChart3, Cpu } from 'lucide-react';
+import { Activity, Flag, BarChart3, Cpu, Trophy } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const location = useLocation();
@@ -31,6 +31,16 @@ export const Navbar: React.FC = () => {
             >
               <Flag className="w-4 h-4" />
               <span>Next Race</span>
+            </Link>
+
+            <Link
+              to="/championship"
+              className={`flex items-center space-x-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive('/championship') ? 'bg-f1-red text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+              }`}
+            >
+              <Trophy className="w-4 h-4" />
+              <span>Championship</span>
             </Link>
 
             <Link
