@@ -15,7 +15,12 @@ Jolpica / Open-Meteo / FastF1
         ↓
    Strategy Engine → Monte Carlo Simulator (10k–500k sims)
         ↓
-   FastAPI → React Dashboard
+   Championship Simulator → FastAPI → React Dashboard
+
+**Simulation features:** NHPP safety-car sampling, fuel-burn correction,
+data-derived quadratic tyre degradation, pit-under-SC discount,
+pairwise D×D matrix, convergence report, recency-weighted form,
+regulation-era indicators.
 ```
 
 **Important:** Predictions are probabilistic forecasts, not deterministic claims.
@@ -80,6 +85,7 @@ docker compose up --build
 | GET | `/api/explain/{race_id}/{driver_id}` | SHAP explanations |
 | GET | `/api/backtests` | Backtest summaries |
 | GET | `/api/models` | Model metadata |
+| POST | `/api/championship/simulate` | Season-long championship simulation |
 
 ## Data Sources
 
@@ -96,6 +102,10 @@ docker compose up --build
 5. **Weather leakage guard** — only pre-race (Fri/Sat) weather may enter features; observed race-day weather never does
 6. **Honest backtesting** — `/api/backtests` serves only persisted, reproducible evaluations; if none exist it returns an empty list, never fabricated metrics
 7. **Reproducibility** — every prediction stores model version, seed, simulation count
+8. **Pairwise comparisons** — D×D finishing probability matrix (P(driver A beats driver B)) for statistically appropriate head-to-head modelling
+9. **Convergence monitoring** — first-half vs second-half win-probability delta to detect insufficient simulation count
+10. **Regulation-aware** — era indicator features (2017+, 2022+) handle F1's significant regulation changes
+11. **Recency weighting** — exponential-decay weighted features (5-race half-life) so recent form matters more than distant history
 
 ## Project Structure
 
