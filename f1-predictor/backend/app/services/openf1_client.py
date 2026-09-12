@@ -10,6 +10,7 @@ Reference: https://openf1.org/ | https://github.com/br-g/openf1
 from __future__ import annotations
 
 import json
+import os
 import time
 import urllib.parse
 import urllib.request
@@ -48,6 +49,10 @@ class OpenF1Error(Exception):
     """Custom exception for OpenF1 API errors."""
 
 
+class OpenF1AuthError(OpenF1Error):
+    """Raised when authentication is required but missing/invalid."""
+
+
 class OpenF1Client:
     """Client for the OpenF1 REST API.
 
@@ -59,8 +64,14 @@ class OpenF1Client:
 
     def __init__(self, settings: Settings):
         self.settings = settings
+        self._api_key = os.environ.get("OPENF1_API_KEY", "")
         self._last_request_time: float = 0.0
         self._min_interval: float = 1.0 / 3.5  # ~285ms between requests
+
+    @property
+    def is_authenticated(self) -> bool:
+        """Check if an API key is configured."""
+        return bool(self._api_key)
 
     def _rate_limit(self) -> None:
         """Enforce rate limit between requests."""
@@ -85,8 +96,13 @@ class OpenF1Client:
             query = urllib.parse.urlencode({k: str(v) for k, v in params.items() if v is not None})
             url = f"{url}?{query}"
 
+        headers = {"Accept": "application/json"}
+        if self._api_key:
+            headers["Authorization"] = f"Bearer {self._api_key}"
+            headers["x-api-key"] = self._api_key
+
         try:
-            req = urllib.request.Request(url, headers={"Accept": "application/json"})
+            req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=30) as response:
                 data = json.loads(response.read().decode("utf-8"))
                 if not isinstance(data, list):
@@ -98,6 +114,13 @@ class OpenF1Client:
                 raise OpenF1Error(f"Rate limited: {exc}") from exc
             if exc.code == 404:
                 return []
+            if exc.code == 401:
+                logger.warning("OpenF1 authentication required (401)")
+                raise OpenF1AuthError(
+                    "OpenF1 API requires authentication. "
+                    "Set OPENF1_API_KEY environment variable. "
+                    "See https://openf1.org/ for access details."
+                ) from exc
             raise OpenF1Error(f"HTTP {exc.code} for {url}: {exc}") from exc
         except urllib.error.URLError as exc:
             raise OpenF1Error(f"URL error for {url}: {exc}") from exc
