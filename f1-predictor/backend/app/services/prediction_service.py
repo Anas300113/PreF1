@@ -121,6 +121,15 @@ class PredictionService:
             safety_car_prob=sc_prob,
         )
 
+        # Pairwise finishing probability matrix (D×D)
+        pairwise_matrix: dict[str, dict[str, float]] = {}
+        for i, di in enumerate(driver_inputs):
+            pairwise_matrix[di.driver_id] = {}
+            for j, dj in enumerate(driver_inputs):
+                pairwise_matrix[di.driver_id][dj.driver_id] = round(
+                    float(mc_result.pairwise_finish_matrix[i][j]), 4
+                )
+
         shap_map = {}
         if quali_model.is_trained:
             try:
@@ -160,6 +169,8 @@ class PredictionService:
                 "Actual race outcomes depend on unpredictable factors."
             ),
             "data_status": "ok",
+            "pairwise_finish_matrix": pairwise_matrix,
+            "convergence_report": mc_result.convergence_report,
         }
 
         if persist:

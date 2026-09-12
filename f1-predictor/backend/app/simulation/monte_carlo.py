@@ -25,6 +25,8 @@ class MonteCarloResult:
     p75_positions: np.ndarray
     p90_positions: np.ndarray
     position_distributions: np.ndarray
+    pairwise_finish_matrix: np.ndarray  # D×D: P(driver_i finishes ahead of driver_j)
+    convergence_report: dict  # simulation stability metrics
 
 class MonteCarloEngine:
     """High-performance Monte Carlo simulation engine."""
@@ -86,6 +88,29 @@ class MonteCarloEngine:
             for pos in range(1, 21):
                 pos_dist[d, pos - 1] = np.mean(positions[:, d] == pos)
 
+        # Pairwise finishing probability matrix (D×D)
+        # pairwise_finish_matrix[i][j] = P(driver_i finishes ahead of driver_j)
+        pairwise = np.zeros((n_drivers, n_drivers))
+        for i in range(n_drivers):
+            for j in range(n_drivers):
+                if i == j:
+                    pairwise[i][j] = 0.5  # reflexive: equal to self
+                else:
+                    pairwise[i][j] = np.mean(positions[:, i] < positions[:, j])
+
+        # Convergence report: compare first-half vs second-half win probabilities
+        # to detect insufficient simulation count
+        mid = n_simulations // 2
+        first_half = np.mean(positions[:mid] == 1, axis=0)
+        second_half = np.mean(positions[mid:] == 1, axis=0)
+        win_diff = np.abs(first_half - second_half)
+        convergence_report = {
+            "win_probability_max_delta": float(np.max(win_diff)),
+            "win_probability_mean_delta": float(np.mean(win_diff)),
+            "n_simulations": n_simulations,
+            "converged": bool(np.max(win_diff) < 0.01),
+        }
+
         return MonteCarloResult(
             n_simulations=n_simulations,
             runtime_seconds=runtime,
@@ -104,5 +129,7 @@ class MonteCarloEngine:
             p25_positions=p25,
             p75_positions=p75,
             p90_positions=p90,
-            position_distributions=pos_dist
+            position_distributions=pos_dist,
+            pairwise_finish_matrix=pairwise,
+            convergence_report=convergence_report,
         )

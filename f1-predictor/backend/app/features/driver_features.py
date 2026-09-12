@@ -19,6 +19,19 @@ class DriverFeatureExtractor:
     def __init__(self, db_session: AsyncSession):
         self.db = db_session
 
+    @staticmethod
+    def recency_weighted(values: list, half_life: int = 5) -> float:
+        """Exponential-decay weighted average with configurable half-life.
+
+        Recent races matter more than distant history (recency weighting).
+        half_life=5 means the weight halves every 5 races back.
+        """
+        if not values:
+            return np.nan
+        weights = [2 ** (-i / half_life) for i in range(len(values))]
+        total_w = sum(weights)
+        return sum(v * w for v, w in zip(values, weights)) / total_w
+
     async def compute_rolling_features(
         self, driver_id: str, race_id_cutoff: str, circuit_id: Optional[str] = None
     ) -> Dict[str, Any]:
@@ -41,6 +54,7 @@ class DriverFeatureExtractor:
         r3_finish = float(np.mean(finishes[:3])) if len(finishes) >= 1 else np.nan
         r5_finish = float(np.mean(finishes[:5])) if len(finishes) >= 1 else np.nan
         r10_finish = float(np.mean(finishes[:10])) if len(finishes) >= 1 else np.nan
+        r10_finish_recency = self.recency_weighted(finishes[:10])
 
         dnf_10 = float(np.mean(dnfs[:10])) if len(dnfs) >= 1 else np.nan
 
@@ -58,6 +72,7 @@ class DriverFeatureExtractor:
             "driver_rolling_3_finish": r3_finish,
             "driver_rolling_5_finish": r5_finish,
             "driver_rolling_10_finish": r10_finish,
+            "driver_rolling_10_finish_recency": r10_finish_recency,
             "driver_dnf_rate_10": dnf_10,
             "driver_circuit_avg_finish": circuit_avg,
         }
@@ -91,9 +106,29 @@ class DriverFeatureExtractor:
             "driver_quali_vs_teammate_3": mean_gap,
         }
 
+    @staticmethod
+    def _regulation_era_features(race_id_cutoff: str) -> Dict[str, float]:
+        """Regulation-era indicator features (F1 regulations change significantly).
+
+        Era boundaries:
+          2017-2021: wide cars, high-downforce ground-effect return
+          2022+: ground-effect floor, 18-inch wheels, simplified aero
+        Data from older eras has weaker predictive power for current seasons.
+        """
+        try:
+            year = int(race_id_cutoff.split("_")[0])
+        except (IndexError, ValueError):
+            year = 2024
+        return {
+            "regulation_era_2022_plus": 1.0 if year >= 2022 else 0.0,
+            "regulation_era_2017_plus": 1.0 if year >= 2017 else 0.0,
+            "season_year": float(year),
+        }
+
     async def get_all_features(
         self, driver_id: str, race_id_cutoff: str, circuit_id: Optional[str] = None
     ) -> Dict[str, Any]:
         rolling = await self.compute_rolling_features(driver_id, race_id_cutoff, circuit_id)
         teammate = await self.compute_teammate_relative_features(driver_id, race_id_cutoff)
-        return {**rolling, **teammate}
+        era = self._regulation_era_features(race_id_cutoff)
+        return {**rolling, **teammate, **era}

@@ -123,6 +123,7 @@ class RaceFeatureBuilder:
             "driver_rolling_3_finish": 10.0,
             "driver_rolling_5_finish": 10.0,
             "driver_rolling_10_finish": 10.0,
+            "driver_rolling_10_finish_recency": 10.0,
             "driver_dnf_rate_10": 0.08,
             "driver_circuit_avg_finish": 10.0,
             "driver_quali_vs_teammate_3": 0.0,
@@ -137,6 +138,9 @@ class RaceFeatureBuilder:
             "fp3_pace_delta": 0.0,
             "quali_gap_to_pole": 1.0,
             "quali_position": 10.0,
+            "regulation_era_2022_plus": 1.0,
+            "regulation_era_2017_plus": 1.0,
+            "season_year": 2024.0,
         }
         for col, val in defaults.items():
             if col not in df.columns:
