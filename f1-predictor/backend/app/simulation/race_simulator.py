@@ -91,13 +91,28 @@ class RaceSimulator:
                 )
                 # A safety car reduces pit loss only for stops occurring in its
                 # deployment window.  This is a common shock shared by all cars.
-                pit_loss = self._pit_loss_for_strategy(strategy, stochastic, mask)
+                pit_loss = self._pit_loss_for_strategy(strategy, stochastic, mask, rng)
                 strategy_times[mask] = tyre_time + pit_loss
             race_times[:, driver_index] += strategy_times
 
         # Track evolution is common but different drivers realise it differently
         # through their selected stint plans; retain a modest residual here.
         race_times -= stochastic.track_evolution_rate[:, None] * laps_factor * 0.15
+
+        # Fuel-burn correction: cars get faster as fuel load decreases
+        # (~0.6 s/lap between a full and an empty tank).  Common to the whole
+        # field, so it barely affects ranking but keeps total race times
+        # realistic and lets pit-loss timing interact with stint length.
+        fuel_gain_full_tank = 0.6  # s/lap
+        fuel_correction = fuel_gain_full_tank * laps_factor / 2.0
+        race_times -= fuel_correction
+
+        # Stochastic tyre degradation noise (per sim-driver), residual sigma
+        # learned from stint fits, scaled with sqrt(laps).
+        for driver_index in range(n_drivers):
+            race_times[:, driver_index] += self.strategy_engine.tyre_model.sample_stint_noise(
+                n_sims, race_laps, rng, circuit_deg_index
+            )
 
         # Incident DNF check
         dnf_mask, dnf_laps = self.incident_model.sample_dnf_laps(n_sims, dnf_probs, race_laps, rng)
@@ -125,24 +140,20 @@ class RaceSimulator:
         race_laps: int,
         circuit_deg_index: float,
     ) -> float:
-        """Return cumulative tyre delta over a complete candidate strategy."""
+        """Return cumulative tyre delta over a complete candidate strategy.
+
+        Uses the closed-form quadratic stint sum (base + linear + quadratic
+        age terms) from TyreModel.get_stint_total_time.
+        """
         boundaries = [0, *strategy.pit_laps, race_laps]
         total = 0.0
         for stint_index, compound in enumerate(strategy.compounds):
             if stint_index + 1 >= len(boundaries):
                 break
             stint_laps = max(0, boundaries[stint_index + 1] - boundaries[stint_index])
-            if stint_laps == 0:
-                continue
-            # Sum base pace + linear age degradation for ages 0..n-1.
-            base = self.strategy_engine.tyre_model.predict_lap_time_delta(
-                compound, 0, circuit_deg_index
+            total += self.strategy_engine.tyre_model.get_stint_total_time(
+                compound, stint_laps, circuit_deg_index
             )
-            age_one = self.strategy_engine.tyre_model.predict_lap_time_delta(
-                compound, 1, circuit_deg_index
-            )
-            slope = age_one - base
-            total += stint_laps * base + slope * stint_laps * (stint_laps - 1) / 2
         return total + strategy.expected_total_time
 
     def _pit_loss_for_strategy(
@@ -150,12 +161,20 @@ class RaceSimulator:
         strategy: PitStrategy,
         stochastic: StochasticFactors,
         mask: np.ndarray,
+        rng: np.random.Generator = None,
     ) -> np.ndarray:
-        """Calculate pit loss, discounting a stop made close to a safety car."""
+        """Pit loss with per-stop execution time ~ Normal(22.5s, 1.2s) sampled
+        from real PitIn/PitOut deltas (AryunGupta research), discounted ~55%
+        for stops made under safety car (letix1 research)."""
+        rng = rng or np.random.default_rng()
         indices = np.flatnonzero(mask)
         losses = np.full(len(indices), strategy.stops * self.pit_loss_seconds, dtype=float)
         if strategy.stops == 0 or not len(indices):
             return losses
+        # Per-stop execution variance: each stop drawn from a normal centred
+        # on the circuit pit loss with ~1.2s sigma.
+        exec_noise = rng.normal(0.0, 1.2, size=(len(indices), strategy.stops)).sum(axis=1)
+        losses += exec_noise
         sc_laps = stochastic.safety_car_lap[indices]
         sc_active = stochastic.safety_car_deployed[indices]
         for pit_lap in strategy.pit_laps:
