@@ -23,18 +23,12 @@ export const ProbabilityBar: React.FC<ProbabilityBarProps> = ({
 
   return (
     <div className="w-full">
-      <div className="h-2.5 w-full bg-gray-700 rounded-full overflow-hidden flex">
-        <div style={{ width: `${winPct}%` }} className="bg-yellow-400" title={`Win: ${winPct.toFixed(1)}%`} />
-        <div style={{ width: `${podiumNonWin}%` }} className="bg-blue-400" title={`Podium: ${(podium * 100).toFixed(1)}%`} />
-        <div style={{ width: `${top5NonPodium}%` }} className="bg-green-400" title={`Top 5: ${(top5 * 100).toFixed(1)}%`} />
-        <div style={{ width: `${pointsNonTop5}%` }} className="bg-purple-400" title={`Points: ${(points * 100).toFixed(1)}%`} />
-        <div style={{ width: `${dnfPct}%` }} className="bg-red-500" title={`DNF: ${dnfPct.toFixed(1)}%`} />
-      </div>
-      <div className="flex justify-between text-[10px] text-gray-400 mt-1">
-        <span>Win: {winPct.toFixed(1)}%</span>
-        <span>Podium: {(podium * 100).toFixed(1)}%</span>
-        <span>Top 5: {(top5 * 100).toFixed(1)}%</span>
-        <span>DNF: {dnfPct.toFixed(1)}%</span>
+      <div className="h-[5px] w-full bg-black/40 rounded-full overflow-hidden flex border border-white/[0.05]">
+        <div style={{ width: `${winPct}%` }} className="bg-[#E10600]" title={`Win: ${winPct.toFixed(1)}%`} />
+        <div style={{ width: `${podiumNonWin}%` }} className="bg-[#F5B942]" title={`Podium: ${(podium * 100).toFixed(1)}%`} />
+        <div style={{ width: `${top5NonPodium}%` }} className="bg-[#9BA1AA]" title={`Top 5: ${(top5 * 100).toFixed(1)}%`} />
+        <div style={{ width: `${pointsNonTop5}%` }} className="bg-[#3a424d]" title={`Points: ${(points * 100).toFixed(1)}%`} />
+        <div style={{ width: `${dnfPct}%` }} className="bg-[#5b2330]" title={`DNF: ${dnfPct.toFixed(1)}%`} />
       </div>
     </div>
   );

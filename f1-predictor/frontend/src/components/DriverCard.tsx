@@ -2,62 +2,39 @@ import React from 'react';
 import { DriverPrediction } from '../types';
 import { ProbabilityBar } from './ProbabilityBar';
 
-interface DriverCardProps {
-  driver: DriverPrediction;
-  onClick?: () => void;
-  selected?: boolean;
-}
-
-export const DriverCard: React.FC<DriverCardProps> = ({ driver, onClick, selected }) => {
+export const DriverCard: React.FC<{ driver: DriverPrediction; onClick?: () => void; selected?: boolean }> = ({ driver, onClick, selected }) => {
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
-      className={`bg-gray-800 border ${
-        selected ? 'border-f1-red shadow-lg shadow-f1-red/20' : 'border-gray-700 hover:border-gray-600'
-      } rounded-lg p-4 transition-all cursor-pointer relative overflow-hidden`}
+      aria-pressed={!!selected}
+      className={`w-full text-left panel p-4 transition-all cursor-pointer relative overflow-hidden hover:border-[rgba(255,255,255,0.14)] ${selected ? 'border-[#E10600]/50 shadow-[0_0_24px_rgba(225,6,0,0.18)]' : ''}`}
     >
-      <div
-        className="absolute top-0 left-0 bottom-0 w-1.5"
-        style={{ backgroundColor: driver.team_color }}
-      />
-      <div className="pl-2">
-        <div className="flex justify-between items-start mb-2">
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className="font-black text-xl text-white">{driver.code}</span>
-              <span className="text-xs px-2 py-0.5 rounded bg-gray-700 text-gray-300 font-medium">
-                {driver.team}
-              </span>
+      <div className="flex gap-3">
+        <span aria-hidden className="w-[3px] rounded-full shrink-0" style={{ backgroundColor: driver.team_color }} />
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between items-start gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-display font-bold text-[17px] text-white tracking-tight">{driver.code}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] text-[#9BA1AA] font-semibold uppercase tracking-wide truncate max-w-[110px]">{driver.team}</span>
+              </div>
+              <p className="text-[12px] text-[#636973] truncate">{driver.full_name}</p>
             </div>
-            <p className="text-xs text-gray-400 mt-0.5">{driver.full_name}</p>
+            <div className="text-right shrink-0">
+              <div className="text-[22px] leading-none font-display font-bold text-white tnum">{(driver.win_probability * 100).toFixed(1)}<span className="text-[13px] text-[#9BA1AA]">%</span></div>
+              <p className="text-[10px] text-[#636973] font-semibold uppercase tracking-wider mt-1">Win</p>
+            </div>
           </div>
-          <div className="text-right">
-            <span className="text-2xl font-black text-yellow-400">
-              {(driver.win_probability * 100).toFixed(1)}%
-            </span>
-            <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Win Prob</p>
+          <div className="grid grid-cols-3 gap-2 my-3 text-center">
+            <div className="bg-black/30 rounded-md py-1.5 border border-white/[0.04]"><div className="text-[10px] text-[#636973] font-semibold">EXP POS</div><div className="font-mono font-bold text-white text-[13px]">P{driver.expected_position.toFixed(1)}</div></div>
+            <div className="bg-black/30 rounded-md py-1.5 border border-white/[0.04]"><div className="text-[10px] text-[#636973] font-semibold">EXP PTS</div><div className="font-mono font-bold text-white text-[13px]">{driver.expected_points.toFixed(1)}</div></div>
+            <div className="bg-black/30 rounded-md py-1.5 border border-white/[0.04]"><div className="text-[10px] text-[#636973] font-semibold">PODIUM</div><div className="font-mono font-bold text-white text-[13px]">{(driver.podium_probability * 100).toFixed(0)}%</div></div>
           </div>
+          <ProbabilityBar win={driver.win_probability} podium={driver.podium_probability} top5={driver.top5_probability} points={driver.points_probability} dnf={driver.dnf_probability} />
         </div>
-
-        <div className="grid grid-cols-2 gap-2 my-3 text-xs bg-gray-900/60 p-2 rounded border border-gray-700/50">
-          <div>
-            <span className="text-gray-400 block text-[10px]">EXPECTED POS</span>
-            <span className="font-bold text-white text-sm">P{driver.expected_position.toFixed(1)}</span>
-          </div>
-          <div>
-            <span className="text-gray-400 block text-[10px]">EXP POINTS</span>
-            <span className="font-bold text-white text-sm">{driver.expected_points.toFixed(1)} pts</span>
-          </div>
-        </div>
-
-        <ProbabilityBar
-          win={driver.win_probability}
-          podium={driver.podium_probability}
-          top5={driver.top5_probability}
-          points={driver.points_probability}
-          dnf={driver.dnf_probability}
-        />
       </div>
-    </div>
+    </button>
   );
 };
+

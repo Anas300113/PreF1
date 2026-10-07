@@ -9,27 +9,31 @@ export const PositionHeatmap: React.FC<PositionHeatmapProps> = ({ drivers }) => 
   const positions = Array.from({ length: 20 }, (_, i) => i + 1);
 
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 overflow-x-auto">
-      <h3 className="text-sm font-bold text-gray-200 mb-3 tracking-wide uppercase">
-        Finishing Position Probability Heatmap
-      </h3>
-      <table className="w-full text-xs text-left">
+    <div className="panel overflow-hidden">
+      <div className="px-4 py-3 border-b border-white/[0.05] flex items-center justify-between">
+        <h3 className="eyebrow !text-[#9BA1AA]">Position distribution</h3>
+        <span className="text-[11px] font-mono text-[#636973]">P1–P20</span>
+      </div>
+      <div className="overflow-x-auto">
+      <table className="w-full text-xs text-left min-w-[640px]">
         <thead>
-          <tr className="border-b border-gray-700">
-            <th className="py-2 px-2 text-gray-400 font-semibold sticky left-0 bg-gray-800">Driver</th>
+          <tr className="border-b border-white/[0.06]">
+            <th className="py-2 px-2 text-[#636973] font-bold sticky left-0 bg-[#0E1116] text-[10px] tracking-[0.12em]">DRIVER</th>
             {positions.map((p) => (
-              <th key={p} className="py-2 px-1 text-center text-gray-400 font-semibold min-w-[28px]">
-                P{p}
+              <th key={p} className="py-2 px-1 text-center text-[#636973] font-mono font-semibold min-w-[30px] text-[10px]">
+                {p}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
           {drivers.map((d) => (
-            <tr key={d.driver_id} className="border-b border-gray-700/50 hover:bg-gray-750">
-              <td className="py-1.5 px-2 font-bold text-white sticky left-0 bg-gray-800 flex items-center space-x-1.5">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: d.team_color }} />
-                <span>{d.code}</span>
+            <tr key={d.driver_id} className="border-b border-white/[0.04] hover:bg-white/[0.02]">
+              <td className="py-1.5 px-2 font-bold text-white sticky left-0 bg-[#0E1116]">
+                <span className="flex items-center gap-1.5">
+                <span className="w-[3px] h-5 rounded-full" style={{ backgroundColor: d.team_color }} />
+                <span className="text-[12px]">{d.code}</span>
+                </span>
               </td>
               {positions.map((p) => {
                 const prob = d.position_distribution[p.toString()] || 0;
@@ -37,13 +41,13 @@ export const PositionHeatmap: React.FC<PositionHeatmapProps> = ({ drivers }) => 
                 return (
                   <td
                     key={p}
-                    className="py-1.5 px-1 text-center font-mono text-[10px] text-white/90 transition-colors"
+                    className="py-1.5 px-1 text-center font-mono text-[10px] text-white/90"
                     style={{
                       backgroundColor: prob > 0.01 ? `rgba(225, 6, 0, ${alpha})` : 'transparent',
                     }}
                     title={`${d.code} P${p}: ${(prob * 100).toFixed(1)}%`}
                   >
-                    {prob > 0.02 ? (prob * 100).toFixed(0) : ''}
+                    {prob > 0.03 ? (prob * 100).toFixed(0) : ''}
                   </td>
                 );
               })}
@@ -51,6 +55,7 @@ export const PositionHeatmap: React.FC<PositionHeatmapProps> = ({ drivers }) => 
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 };

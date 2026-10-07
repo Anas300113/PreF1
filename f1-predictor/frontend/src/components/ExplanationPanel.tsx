@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, AlertTriangle, Info } from 'lucide-react';
+import { CheckCircle2, AlertTriangle } from 'lucide-react';
 import { DriverExplanation } from '../types';
 
 interface ExplanationPanelProps {
@@ -10,42 +10,31 @@ interface ExplanationPanelProps {
 export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({ driverCode, explanation }) => {
   if (!explanation) {
     return (
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 text-xs text-gray-400">
-        Select a driver card to view model explanation and SHAP factors.
+      <div className="panel p-4 text-[12.5px] text-[#636973]">
+        Select a driver row to view model factors.
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-      <div className="flex items-center space-x-2 mb-3">
-        <Info className="w-4 h-4 text-blue-400" />
-        <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wide">
-          Model Explainability Factors: {driverCode}
-        </h3>
-      </div>
+    <div className="panel p-4">
+      <div className="eyebrow !text-[#9BA1AA] mb-3">Why {driverCode} · model factors</div>
 
-      <div className="space-y-3 text-xs">
+      <div className="space-y-3 text-[12.5px]">
         <div>
-          <span className="text-green-400 font-bold block mb-1 flex items-center space-x-1">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>POSITIVE ADVANTAGE FACTORS</span>
-          </span>
-          <ul className="list-disc list-inside space-y-1 text-gray-300">
+          <span className="text-[#20C997] font-bold block mb-1.5 text-[11px] tracking-wide">STRENGTHS</span>
+          <ul className="space-y-1.5 text-[#c7ccd2]">
             {explanation.positive_factors.map((f, i) => (
-              <li key={i}>{f}</li>
+              <li key={i} className="flex gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#20C997] shrink-0 mt-0.5" /><span>{f}</span></li>
             ))}
           </ul>
         </div>
 
         <div>
-          <span className="text-red-400 font-bold block mb-1 flex items-center space-x-1">
-            <AlertTriangle className="w-3.5 h-3.5" />
-            <span>RISK / NEGATIVE FACTORS</span>
-          </span>
-          <ul className="list-disc list-inside space-y-1 text-gray-300">
+          <span className="text-[#FF6B61] font-bold block mb-1.5 text-[11px] tracking-wide">RISKS</span>
+          <ul className="space-y-1.5 text-[#c7ccd2]">
             {explanation.negative_factors.map((f, i) => (
-              <li key={i}>{f}</li>
+              <li key={i} className="flex gap-2"><AlertTriangle className="w-3.5 h-3.5 text-[#FF6B61] shrink-0 mt-0.5" /><span>{f}</span></li>
             ))}
           </ul>
         </div>

@@ -1,25 +1,27 @@
 import React, { useState } from 'react';
 import { ChampionshipResponse, ChampionshipDriverStanding } from '../types';
 import { simulateChampionship } from '../api/client';
-import { Trophy, Flag, AlertCircle } from 'lucide-react';
+import { Trophy } from 'lucide-react';
 
 const SAMPLE_DRIVERS = [
-  { driver_id: 'VER', code: 'VER', full_name: 'Max Verstappen', team_id: 'RBR', team_name: 'Red Bull Racing', current_points: 210 },
-  { driver_id: 'NOR', code: 'NOR', full_name: 'Lando Norris', team_id: 'MCL', team_name: 'McLaren', current_points: 180 },
-  { driver_id: 'LEC', code: 'LEC', full_name: 'Charles Leclerc', team_id: 'FER', team_name: 'Ferrari', current_points: 160 },
-  { driver_id: 'PIA', code: 'PIA', full_name: 'Oscar Piastri', team_id: 'MCL', team_name: 'McLaren', current_points: 150 },
-  { driver_id: 'SAI', code: 'SAI', full_name: 'Carlos Sainz', team_id: 'FER', team_name: 'Ferrari', current_points: 140 },
-  { driver_id: 'HAM', code: 'HAM', full_name: 'Lewis Hamilton', team_id: 'MER', team_name: 'Mercedes', current_points: 120 },
-  { driver_id: 'RUS', code: 'RUS', full_name: 'George Russell', team_id: 'MER', team_name: 'Mercedes', current_points: 110 },
-  { driver_id: 'ALO', code: 'ALO', full_name: 'Fernando Alonso', team_id: 'AMR', team_name: 'Aston Martin', current_points: 80 },
+  { driver_id: 'VER', code: 'VER', full_name: 'Max Verstappen', team_id: 'RBR', team_name: 'Red Bull Racing', current_points: 318 },
+  { driver_id: 'NOR', code: 'NOR', full_name: 'Lando Norris', team_id: 'MCL', team_name: 'McLaren', current_points: 289 },
+  { driver_id: 'PIA', code: 'PIA', full_name: 'Oscar Piastri', team_id: 'MCL', team_name: 'McLaren', current_points: 271 },
+  { driver_id: 'LEC', code: 'LEC', full_name: 'Charles Leclerc', team_id: 'FER', team_name: 'Ferrari', current_points: 244 },
+  { driver_id: 'RUS', code: 'RUS', full_name: 'George Russell', team_id: 'MER', team_name: 'Mercedes', current_points: 210 },
+  { driver_id: 'HAM', code: 'HAM', full_name: 'Lewis Hamilton', team_id: 'FER', team_name: 'Ferrari', current_points: 188 },
+  { driver_id: 'ANT', code: 'ANT', full_name: 'Kimi Antonelli', team_id: 'MER', team_name: 'Mercedes', current_points: 154 },
+  { driver_id: 'SAI', code: 'SAI', full_name: 'Carlos Sainz', team_id: 'WIL', team_name: 'Williams', current_points: 121 },
 ];
 
 const SAMPLE_RACES = [
-  { race_id: '2025_15', name: 'Belgian GP', round_number: 15, total_laps: 44 },
-  { race_id: '2025_16', name: 'Hungarian GP', round_number: 16, total_laps: 70 },
-  { race_id: '2025_17', name: 'Dutch GP', round_number: 17, total_laps: 72 },
-  { race_id: '2025_18', name: 'Italian GP', round_number: 18, total_laps: 53 },
-  { race_id: '2025_19', name: 'Azerbaijan GP', round_number: 19, total_laps: 51 },
+  { race_id: '2026_17', name: 'Singapore GP', round_number: 17, total_laps: 62, is_sprint_weekend: true },
+  { race_id: '2026_18', name: 'United States GP', round_number: 18, total_laps: 56, is_sprint_weekend: true },
+  { race_id: '2026_19', name: 'Mexico City GP', round_number: 19, total_laps: 71 },
+  { race_id: '2026_20', name: 'Brazilian GP', round_number: 20, total_laps: 71, is_sprint_weekend: true },
+  { race_id: '2026_21', name: 'Las Vegas GP', round_number: 21, total_laps: 50 },
+  { race_id: '2026_22', name: 'Qatar GP', round_number: 22, total_laps: 57, is_sprint_weekend: true },
+  { race_id: '2026_23', name: 'Abu Dhabi GP', round_number: 23, total_laps: 58 },
 ];
 
 const TEAM_COLORS: Record<string, string> = {
@@ -38,7 +40,7 @@ export const Championship: React.FC = () => {
   const handleSimulate = async () => {
     setLoading(true);
     try {
-      const res = await simulateChampionship(2025, SAMPLE_DRIVERS, SAMPLE_RACES, nSims);
+      const res = await simulateChampionship(2026, SAMPLE_DRIVERS, SAMPLE_RACES, nSims);
       setResult(res);
     } catch (e) {
       console.error(e);
@@ -48,27 +50,24 @@ export const Championship: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      <div className="bg-gradient-to-r from-gray-800 via-gray-800 to-gray-900 border border-gray-700 rounded-xl p-6">
-        <div className="flex items-center space-x-3">
-          <Trophy className="w-7 h-7 text-yellow-400" />
-          <div>
-            <h1 className="text-2xl font-black text-white tracking-tight">Championship Simulator</h1>
-            <p className="text-sm text-gray-400">
-              Monte Carlo simulation of the remaining season
-            </p>
-          </div>
+    <div className="space-y-5 animate-fade-in">
+      <div className="flex items-center gap-3">
+        <span className="w-9 h-9 rounded-[10px] bg-[#15191F] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-[#E10600]"><Trophy className="w-[18px] h-[18px]" /></span>
+        <div>
+          <div className="eyebrow">Season run-out · {SAMPLE_RACES.length} races left</div>
+          <h1 className="font-display font-bold text-white text-[24px] tracking-tight leading-none">Title race</h1>
         </div>
       </div>
 
-      <div className="bg-gray-800/60 border border-gray-700/50 rounded-lg p-4 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="panel p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
           <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase">Simulations</label>
+            <label htmlFor="champ-sims" className="text-[11px] font-bold text-[#636973] tracking-wide">SIMULATIONS</label>
             <select
+              id="champ-sims"
               value={nSims}
               onChange={(e) => setNSims(Number(e.target.value))}
-              className="block mt-1 bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm text-white"
+              className="field !w-auto mt-1 min-h-[38px]"
             >
               <option value={1000}>1,000</option>
               <option value={5000}>5,000</option>
@@ -76,99 +75,91 @@ export const Championship: React.FC = () => {
               <option value={50000}>50,000</option>
             </select>
           </div>
-          <div className="text-xs text-gray-500">
-            <p>{SAMPLE_DRIVERS.length} drivers</p>
-            <p>{SAMPLE_RACES.length} races remaining</p>
+          <div className="text-[12px] text-[#636973] font-mono">
+            <p>{SAMPLE_DRIVERS.length} DRIVERS</p>
+            <p>{SAMPLE_RACES.length} RACES</p>
           </div>
         </div>
         <button
           onClick={handleSimulate}
           disabled={loading}
-          className="bg-f1-red hover:bg-red-700 disabled:opacity-50 text-white font-bold px-6 py-2 rounded-lg text-sm transition"
+          className="btn-primary disabled:opacity-50 min-h-[42px]"
         >
-          {loading ? 'Simulating Season...' : 'Run Championship Simulation'}
+          {loading ? 'Simulating...' : 'Run title simulation'}
         </button>
       </div>
 
       {loading && (
         <div className="flex items-center justify-center py-16">
           <div className="text-center space-y-3">
-            <div className="w-10 h-10 border-4 border-f1-red border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-sm font-semibold text-gray-400">
-              Running {nSims.toLocaleString()} simulations × {SAMPLE_RACES.length} races...
+            <div className="w-10 h-10 border-[3px] border-[#E10600] border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-[13px] font-medium text-[#9BA1AA]">
+              Running {nSims.toLocaleString()} simulations...
             </p>
           </div>
         </div>
       )}
 
       {result && !loading && (
-        <div className="space-y-6">
-          <div className="bg-gray-800/60 border border-gray-700/50 rounded-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-700/50 flex items-center space-x-2">
-              <Flag className="w-5 h-5 text-yellow-400" />
-              <h2 className="text-lg font-bold text-white">Driver Championship Probabilities</h2>
+        <div className="space-y-4">
+          <div className="panel overflow-hidden">
+            <div className="px-4 sm:px-5 py-3.5 border-b border-white/[0.05] flex items-center justify-between">
+              <h2 className="eyebrow !text-[#9BA1AA]">Drivers · title odds</h2>
+              <span className="text-[11px] font-mono text-[#636973]">{result.n_simulations.toLocaleString()} SIMS</span>
             </div>
-            <div className="divide-y divide-gray-700/30">
-              {result.driver_standings
-                .sort((a, b) => b.championship_win_probability - a.championship_win_probability)
-                .map((d: ChampionshipDriverStanding, idx: number) => (
-                  <div key={d.driver_id} className="px-6 py-3 flex items-center justify-between hover:bg-gray-700/20 transition">
-                    <div className="flex items-center space-x-4">
-                      <span className={`text-lg font-black ${idx === 0 ? 'text-yellow-400' : 'text-gray-500'}`}>
-                        {idx + 1}
-                      </span>
-                      <div className="w-1 h-8 rounded" style={{ backgroundColor: TEAM_COLORS[d.team_id] || '#888' }} />
-                      <div>
-                        <p className="text-sm font-bold text-white">{d.code}</p>
-                        <p className="text-xs text-gray-500">{d.team_id}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-6">
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-yellow-400">{(d.championship_win_probability * 100).toFixed(1)}%</p>
-                        <p className="text-xs text-gray-500">win</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-white">{d.expected_championship_points.toFixed(0)}</p>
-                        <p className="text-xs text-gray-500">exp. pts</p>
-                      </div>
-                      <div className="w-32 bg-gray-700 rounded-full h-2">
-                        <div className="bg-yellow-400 h-2 rounded-full" style={{ width: `${d.championship_win_probability * 100}%` }} />
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            <div className="overflow-x-auto">
+              <table className="timing-table min-w-[560px]">
+                <thead><tr><th className="!text-center w-12">Pos</th><th>Driver</th><th className="!text-right">Title</th><th className="!text-right">Exp pts</th><th className="!text-right w-[180px]">Share</th></tr></thead>
+                <tbody>
+                  {result.driver_standings
+                    .sort((a, b) => b.championship_win_probability - a.championship_win_probability)
+                    .map((d: ChampionshipDriverStanding, idx: number) => (
+                      <tr key={d.driver_id}>
+                        <td className="!text-center"><span className={`inline-flex w-7 h-7 items-center justify-center rounded-md font-display font-bold text-[13px] ${idx === 0 ? 'bg-[#E10600]/15 text-[#FF6B61]' : 'bg-white/[0.05] text-white'}`}>{idx + 1}</span></td>
+                        <td><div className="flex items-center gap-2.5"><span className="w-[3px] h-7 rounded-full" style={{ backgroundColor: TEAM_COLORS[d.team_id] || '#888' }} /><div><div className="font-bold text-white text-[14px] leading-none">{d.code}</div><div className="text-[11px] text-[#636973] mt-0.5">{d.team_id}</div></div></div></td>
+                        <td className="num text-white font-bold">{(d.championship_win_probability * 100).toFixed(1)}%</td>
+                        <td className="num text-[#9BA1AA]">{d.expected_championship_points.toFixed(0)}</td>
+                        <td><div className="h-[5px] bg-black/40 rounded-full overflow-hidden border border-white/[0.05]"><div className="h-full bg-[#E10600] rounded-full" style={{ width: `${Math.min(100, d.championship_win_probability * 100)}%` }} /></div></td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
-          <div className="bg-gray-800/60 border border-gray-700/50 rounded-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-700/50">
-              <h2 className="text-lg font-bold text-white">Constructor Championship</h2>
+          <div className="panel overflow-hidden">
+            <div className="px-4 sm:px-5 py-3.5 border-b border-white/[0.05]">
+              <h2 className="eyebrow !text-[#9BA1AA]">Constructors · title odds</h2>
             </div>
-            <div className="divide-y divide-gray-700/30">
-              {result.constructor_standings
-                .sort((a, b) => b.championship_win_probability - a.championship_win_probability)
-                .map((c, idx) => (
-                  <div key={c.team_id} className="px-6 py-3 flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <span className={`text-lg font-black ${idx === 0 ? 'text-yellow-400' : 'text-gray-500'}`}>{idx + 1}</span>
-                      <p className="text-sm font-bold text-white">{c.team_id}</p>
-                    </div>
-                    <div className="flex items-center space-x-6">
-                      <p className="text-sm font-bold text-yellow-400">{(c.championship_win_probability * 100).toFixed(1)}%</p>
-                      <p className="text-sm text-gray-300">{c.expected_championship_points.toFixed(0)} pts</p>
-                    </div>
-                  </div>
-                ))}
+            <div className="overflow-x-auto">
+              <table className="timing-table min-w-[480px]">
+                <thead><tr><th className="!text-center w-12">Pos</th><th>Team</th><th className="!text-right">Title</th><th className="!text-right">Exp pts</th></tr></thead>
+                <tbody>
+                  {result.constructor_standings
+                    .sort((a, b) => b.championship_win_probability - a.championship_win_probability)
+                    .map((c, idx) => (
+                      <tr key={c.team_id}>
+                        <td className="!text-center"><span className="inline-flex w-7 h-7 items-center justify-center rounded-md bg-white/[0.05] text-white font-display font-bold text-[13px]">{idx + 1}</span></td>
+                        <td className="font-bold text-white text-[14px]">{c.team_id}</td>
+                        <td className="num text-white font-bold">{(c.championship_win_probability * 100).toFixed(1)}%</td>
+                        <td className="num text-[#9BA1AA]">{c.expected_championship_points.toFixed(0)}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       )}
 
-      <div className="bg-gray-800/60 border border-gray-700/50 rounded-lg p-3 flex items-start space-x-2.5 text-xs text-gray-400">
-        <AlertCircle className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
-        <p>Probabilistic forecasts based on Monte Carlo simulation. Actual outcomes depend on unpredictable factors.</p>
-      </div>
+      {!result && !loading && (
+        <div className="panel p-10 text-center">
+          <p className="text-white font-bold">No title run yet</p>
+          <p className="text-[13px] text-[#9BA1AA] mt-1">Run the simulation to project the remaining season.</p>
+        </div>
+      )}
+
+      <p className="text-[12px] text-[#636973] leading-relaxed">Probabilistic forecasts from Monte Carlo simulation. Real outcomes depend on unpredictable race events.</p>
     </div>
   );
 };

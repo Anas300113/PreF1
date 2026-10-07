@@ -5,26 +5,26 @@ interface QualifyingGridProps {
 }
 
 export const QualifyingGrid: React.FC<QualifyingGridProps> = ({ grid }) => {
+  const sorted = [...grid].sort((a, b) => a.expected_position - b.expected_position);
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-      <h3 className="text-sm font-bold text-gray-200 mb-3 tracking-wide uppercase">
-        Predicted Qualifying Grid (Q3 Pace Model)
-      </h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {grid.map((item, idx) => (
-          <div
-            key={item.driver_id}
-            className="flex items-center justify-between bg-gray-900/60 p-2.5 rounded border border-gray-700/50"
-          >
-            <div className="flex items-center space-x-2.5">
-              <span className="font-extrabold text-f1-red text-sm w-6">P{idx + 1}</span>
-              <span className="font-bold text-white text-sm">{item.code}</span>
-            </div>
-            <span className="text-xs text-gray-400 font-mono">
-              {idx === 0 ? 'POLE' : `+${(idx * 0.12).toFixed(3)}s`}
-            </span>
-          </div>
-        ))}
+    <div className="panel overflow-hidden">
+      <div className="px-4 py-3 border-b border-white/[0.05] flex items-center justify-between">
+        <h3 className="eyebrow !text-[#9BA1AA]">Qualifying · Q3 pace</h3>
+        <span className="text-[11px] font-mono text-[#636973]">GAP TO POLE</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="timing-table min-w-[420px]">
+          <thead><tr><th className="!text-center w-14">Grid</th><th>Driver</th><th className="!text-right">Gap</th></tr></thead>
+          <tbody>
+            {sorted.map((item, idx) => (
+              <tr key={item.driver_id}>
+                <td className="!text-center"><span className={`inline-flex w-8 h-7 items-center justify-center rounded-md font-mono font-bold text-[12px] ${idx === 0 ? 'bg-[#E10600]/15 text-[#FF6B61]' : 'bg-white/[0.05] text-white'}`}>P{idx + 1}</span></td>
+                <td className="font-bold text-white text-[13.5px]">{item.code}</td>
+                <td className="num text-[#9BA1AA]">{idx === 0 ? 'POLE' : `+${(idx * 0.12).toFixed(3)}`}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

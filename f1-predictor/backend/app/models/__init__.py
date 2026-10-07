@@ -17,6 +17,8 @@ from app.models.prediction import Prediction
 from app.models.prediction_driver_result import PredictionDriverResult
 from app.models.simulation_run import SimulationRun
 from app.models.backtest_result import BacktestSeason, BacktestRace
+from app.models.provenance import DatasetProvenance
+from app.models.standing import ChampionshipStanding
 
 __all__ = [
     "Circuit",
@@ -39,4 +41,6 @@ __all__ = [
     "SimulationRun",
     "BacktestSeason",
     "BacktestRace",
+    "DatasetProvenance",
+    "ChampionshipStanding",
 ]
