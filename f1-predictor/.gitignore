@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+ENV/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Local runtime data: SQLite cache, weather archive cache, logs
+data/db/*.db
+data/cache/
+logs/*.log
+
+# Trained model artifacts (verify/register instead of committing)
+models/trained/
+

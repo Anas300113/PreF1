@@ -117,7 +117,7 @@ f1-predictor/
 │   ├── ml/               # XGBoost models + training
 │   ├── simulation/       # Monte Carlo engine
 │   ├── services/         # Jolpica, weather, prediction orchestration
-│   └── backtesting/      # Historical evaluation
+│   ├── models/            # Trained XGBoost artifacts (checksummed registry)
 ├── frontend/             # React + Tailwind dashboard
 ├── scripts/              # Ingestion & training CLIs
 ├── tests/                # Unit & integration tests
@@ -131,6 +131,8 @@ cd f1-predictor
 pytest tests/ -v
 ```
 
+The suite includes regression guards for the championship Monte Carlo (sampled race outcomes + sprint scoring), teammate-relative features, the checksummed model registry, train/serve skew provenance, the leakage guard, and DB-backed endpoints.
+
 ## Configuration
 
 Environment variables (`.env`):
@@ -143,3 +145,9 @@ LOG_LEVEL=INFO
 ```
 
 SQLite is the default; swap `DATABASE_URL` for PostgreSQL when scaling.
+
+Artifacts are stored under `models/trained/`; metadata (`models/trained/metadata/<type>_<version>.json`) carries the SHA-256 checksum.
+Production startup verifies each artifact from `require_trained_models`; missing or corrupt artifacts raise (or, with `REQUIRE_TRAINED_MODELS=false`, start in a degraded mode that attaches `app.state.model_status` and reports `model_unavailable` per prediction — never a silent heuristic fall-back).
+
+
+

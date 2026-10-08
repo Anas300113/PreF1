@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import uuid
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -88,7 +87,7 @@ class PredictionService:
             }
         is_wet = weather.get("is_wet", False)
 
-        quali_model, pace_model, dnf_model = self._load_models()
+        quali_model, pace_model, dnf_model, model_provenance = self._load_models()
         quali_preds = self._predict_qualifying(features, quali_model)
         pace_preds = self._predict_race_pace(features, pace_model, quali_preds)
         dnf_probs = self._predict_dnf(features, dnf_model)
@@ -144,6 +143,23 @@ class PredictionService:
         training_cutoff = self._training_cutoff_metadata()
         created_at = datetime.now(timezone.utc)
 
+        # Honest model provenance: users must be able to tell an ML forecast
+        # from a heuristic one (Principle: never claim ML when heuristic).
+        ml_backends = [p["backend"] for p in model_provenance.values()]
+        if all(b == "xgboost" for b in ml_backends):
+            inference_backend = "xgboost"
+        elif any(b == "xgboost" for b in ml_backends):
+            inference_backend = "mixed"
+        else:
+            inference_backend = "heuristic"
+
+        # Prediction cutoff: no feature used by this prediction may originate
+        # after the race's own date (feature builder enforces race_date <
+        # cutoff for historical features; weekend features are pre-race).
+        data_cutoff = (
+            race.race_date.isoformat() if race.race_date else created_at.date().isoformat()
+        )
+
         response = {
             "race": race,
             "model": {
@@ -153,7 +169,11 @@ class PredictionService:
                 "simulation_seed": seed,
                 "feature_version": self.settings.feature_version,
                 "created_at": created_at.isoformat(),
+                "prediction_cutoff_timestamp": data_cutoff,
                 "runtime_seconds": mc_result.runtime_seconds,
+                "inference_backend": inference_backend,
+                "components": model_provenance,
+                "model_unavailable": inference_backend == "heuristic",
             },
             "drivers": driver_preds,
             "qualifying_prediction": quali_grid,
@@ -178,29 +198,82 @@ class PredictionService:
 
         return response
 
-    def _load_models(self) -> tuple[QualifyingModel, RacePaceModel, DNFModel]:
+    def _load_models(
+        self,
+    ) -> tuple[QualifyingModel, RacePaceModel, DNFModel, dict[str, Any]]:
+        """Load registered model artifacts and report provenance per model.
+
+        Returns (quali, pace, dnf, provenance) where provenance maps each
+        model type to {"backend": "xgboost"|"heuristic", "version": ...}.
+        Heuristic fallback is NEVER silent — the caller must surface it.
+        """
         quali = QualifyingModel()
         pace = RacePaceModel()
         dnf = DNFModel()
+        provenance: dict[str, Any] = {}
 
-        for model_type, target in [
-            ("qualifying", quali),
-            ("race_pace", pace),
-            ("dnf", dnf),
-        ]:
-            path = Path(self.settings.models_dir) / f"{model_type}_v1.0.joblib"
-            if path.exists():
-                try:
-                    loaded = type(target).load(str(path))
-                    if model_type == "qualifying":
-                        quali = loaded
-                    elif model_type == "race_pace":
-                        pace = loaded
-                    else:
-                        dnf = loaded
-                except Exception as exc:
-                    logger.warning("Failed to load model", model=model_type, error=str(exc))
-        return quali, pace, dnf
+        registry_models = {
+            "qualifying": quali,
+            "race_pace": pace,
+            "dnf": dnf,
+        }
+        required = {
+            entry["model_type"]: entry["version"]
+            for entry in self.settings.required_model_list()
+            if entry["model_type"] in registry_models
+        }
+
+        for model_type, target in registry_models.items():
+            version = required.get(model_type, "v1.0")
+            status = self.registry.verify(model_type, version)
+            provenance[model_type] = {
+                "version": version,
+                "backend": "heuristic",
+                "artifact_available": status.available,
+                "checksum_ok": status.checksum_ok,
+                "training_data_cutoff": status.metadata.get("training_data_cutoff"),
+                "error": status.error,
+            }
+            if not status.available:
+                logger.warning(
+                    "Model artifact unavailable — heuristic fallback in use",
+                    model=model_type,
+                    version=version,
+                    error=status.error,
+                )
+                continue
+            try:
+                loaded = type(target).load(str(self.registry.artifact_path(model_type, version)))
+            except Exception as exc:
+                logger.warning("Failed to load model", model=model_type, error=str(exc))
+                provenance[model_type][
+                    "error"
+                ] = f"load_failed: {exc}"
+                continue
+            # Refuse to treat a load as "trained" unless the estimator actually
+            # carries a fitted booster.  load() historically forced
+            # is_trained=True, which would otherwise silently present a
+            # never-trained artefact as an ML prediction.
+            if not (loaded.is_trained and getattr(loaded, "model", None) is not None):
+                logger.warning(
+                    "Loaded model has no fitted booster — heuristic fallback in use",
+                    model=model_type,
+                    error="unfitted_artifact",
+                )
+                provenance[model_type][
+                    "error"
+                ] = "unfitted_artifact"
+                continue
+            if model_type == "qualifying":
+                quali = loaded
+            elif model_type == "race_pace":
+                pace = loaded
+            else:
+                dnf = loaded
+            provenance[model_type][
+                "backend"
+            ] = "xgboost"
+        return quali, pace, dnf, provenance
 
     def _predict_qualifying(self, features: pd.DataFrame, model: QualifyingModel) -> pd.DataFrame:
         if model.is_trained:
@@ -213,13 +286,28 @@ class PredictionService:
         return df.sort_values("predicted_quali_position")
 
     def _predict_race_pace(self, features: pd.DataFrame, model: RacePaceModel, quali: pd.DataFrame) -> pd.DataFrame:
+        """Predict race pace with train/serve-consistent qualifying inputs.
+
+        The race-pace model was trained with OBSERVED qualifying values
+        (training_data_builder injects actual quali gap/position).  At serve
+        time we therefore keep observed qualifying wherever it exists and
+        only substitute the qualifying model's prediction before qualifying
+        has been held ('pre-qualifying' prediction mode).
+        """
         merged = features.merge(
             quali[["driver_id", "predicted_gap_to_pole", "predicted_quali_position"]],
             on="driver_id",
             how="left",
         )
-        merged["quali_gap_to_pole"] = merged["predicted_gap_to_pole"]
-        merged["quali_position"] = merged["predicted_quali_position"]
+        observed = merged.get("quali_observed", pd.Series(0.0, index=merged.index)).fillna(0.0) == 1.0
+        # Observed where available; predicted only for pre-qualifying rows.
+        merged["quali_gap_to_pole"] = np.where(
+            observed, merged["quali_gap_to_pole"], merged["predicted_gap_to_pole"]
+        )
+        merged["quali_position"] = np.where(
+            observed, merged["quali_position"], merged["predicted_quali_position"]
+        )
+        merged["qualifying_mode"] = np.where(observed, "post_qualifying", "pre_qualifying")
 
         if model.is_trained:
             pace = model.predict(merged)
@@ -263,8 +351,14 @@ class PredictionService:
             field_median = float(np.nanmedian(pace["predicted_race_pace_delta"].values))
             base_pace = (pace_score - field_median) * 0.12
 
-            quali_pos = int(q_row["predicted_quali_position"])
-            quali_pace = float(q_row["predicted_gap_to_pole"])
+            # Prefer the OBSERVED qualifying position (official grid prior)
+            # when qualifying has been held; otherwise the model's prediction.
+            if q_row.get("quali_observed", 0.0) == 1.0 and not pd.isna(q_row.get("quali_position")):
+                quali_pos = int(q_row["quali_position"])
+                quali_pace = float(q_row.get("quali_gap_to_pole", 0.0) or 0.0)
+            else:
+                quali_pos = int(q_row["predicted_quali_position"])
+                quali_pace = float(q_row["predicted_gap_to_pole"])
             wet_skill = -0.15 if row.get("driver_circuit_avg_finish", 10) < 5 else 0.0
 
             strats = strat_e.generate_candidate_strategies(
@@ -424,17 +518,21 @@ class PredictionService:
         finally:
             await client.close()
 
+        # No forecast data available.  NEVER fabricate plausible-looking
+        # weather — return nulls explicitly labelled as an assumption so the
+        # UI can distinguish missing data from observed/forecast data.
         return {
-            "source": "open_meteo_forecast",
+            "source": "assumed_dry_no_forecast",
             "retrieved_at": now.isoformat(),
-            "temperature_c": 22.0,
-            "precipitation_probability": 10.0,
-            "precipitation_mm": 0.0,
-            "wind_speed_ms": 5.0,
-            "cloud_cover_pct": 25.0,
-            "humidity_pct": 55.0,
+            "temperature_c": None,
+            "precipitation_probability": None,
+            "precipitation_mm": None,
+            "wind_speed_ms": None,
+            "cloud_cover_pct": None,
+            "humidity_pct": None,
             "is_wet": False,
-            "weather_code": 1,
+            "weather_code": None,
+            "note": "ASSUMED: no forecast available; simulation assumes dry conditions.",
         }
 
     @staticmethod

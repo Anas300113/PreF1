@@ -85,6 +85,7 @@ async def simulate_championship(request: ChampionshipRequest):
         remaining_races=races,
         n_simulations=min(request.n_simulations, 50000),
         seed=request.seed,
+        season=request.season,
     )
 
     response = format_championship_response(result)

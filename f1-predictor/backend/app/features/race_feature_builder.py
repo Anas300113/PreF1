@@ -92,6 +92,12 @@ class RaceFeatureBuilder:
             quali = quali_by_driver.get(driver_id)
             quali_gap = float(quali.gap_to_pole_s) if quali and quali.gap_to_pole_s is not None else np.nan
             quali_pos = int(quali.position) if quali and quali.position else np.nan
+            # Whether THIS race's qualifying has actually happened.  The
+            # race-pace model must consume observed qualifying when it
+            # exists (post-qualifying prediction) and only fall back to
+            # the qualifying model's prediction pre-qualifying — otherwise
+            # train/serve skew: the model was trained on observed quali.
+            quali_observed = 1.0 if (quali and quali.position is not None) else 0.0
 
             row: dict[str, Any] = {
                 "driver_id": driver_id,
@@ -106,6 +112,7 @@ class RaceFeatureBuilder:
                 "fp3_pace_delta": DEFAULT_FP_DELTA,
                 "quali_gap_to_pole": quali_gap,
                 "quali_position": quali_pos,
+                "quali_observed": quali_observed,
                 **driver_feats,
                 **team_feats,
                 **circuit_feats,
@@ -127,6 +134,11 @@ class RaceFeatureBuilder:
             "driver_dnf_rate_10": 0.08,
             "driver_circuit_avg_finish": 10.0,
             "driver_quali_vs_teammate_3": 0.0,
+            "driver_quali_vs_teammate_5_mean": 0.0,
+            "driver_quali_vs_teammate_5_median": 0.0,
+            "driver_quali_vs_teammate_5_std": 0.0,
+            "driver_teammate_q_h2h_win_rate": 0.5,
+            "driver_teammate_q_comparisons": 0.0,
             "team_quali_pace_vs_field": 0.5,
             "team_dnf_rate_5": 0.08,
             "circuit_length_km": 5.0,
@@ -138,6 +150,7 @@ class RaceFeatureBuilder:
             "fp3_pace_delta": 0.0,
             "quali_gap_to_pole": 1.0,
             "quali_position": 10.0,
+            "quali_observed": 0.0,
             "regulation_era_2022_plus": 1.0,
             "regulation_era_2017_plus": 1.0,
             "season_year": 2024.0,

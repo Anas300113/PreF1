@@ -31,11 +31,15 @@ class RaceSimulator:
         race_laps: int = 58,
         is_wet: bool = False,
         circuit_deg_index: float = 0.5,
-        rng: np.random.Generator = None
+        rng: np.random.Generator = None,
+        points_table: np.ndarray = None,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Vectorised simulation over N simulations and D drivers.
         Returns: (positions, points, dnfs) of shape (N, D)
+
+        points_table: optional custom scoring table (e.g. sprint 8-7-6-5-4-3-2-1).
+        Defaults to the standard F1 race scoring.
         """
         rng = rng or np.random.default_rng()
         n_sims = stochastic.n_sims
@@ -128,9 +132,13 @@ class RaceSimulator:
         # Ranking per simulation
         order = np.argsort(race_times, axis=1)
         positions = np.argsort(order, axis=1) + 1
-        points_table = np.asarray(self.POINTS, dtype=float)
-        points = points_table[np.minimum(positions, len(points_table)) - 1]
-        points[(positions > 10) | dnf_mask] = 0.0
+        scoring = np.asarray(points_table if points_table is not None else self.POINTS, dtype=float)
+        # Pad with zeros so any finishing position can index safely.
+        if len(scoring) < positions.shape[1]:
+            scoring = np.pad(scoring, (0, positions.shape[1] - len(scoring)))
+        points = scoring[np.minimum(positions, len(scoring)) - 1]
+        # Non-scoring positions and retirements score zero.
+        points[(positions > np.sum(scoring > 0)) | dnf_mask] = 0.0
 
         return positions, points, dnf_mask
 

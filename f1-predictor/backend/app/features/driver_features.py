@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import numpy as np
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -80,30 +80,91 @@ class DriverFeatureExtractor:
     async def compute_teammate_relative_features(
         self, driver_id: str, race_id_cutoff: str, n_races: int = 3
     ) -> Dict[str, Any]:
-        # Simplified teammate qualifying gap calculation
+        """Leakage-safe driver-vs-teammate qualifying gaps.
+
+        For every historical event strictly before the cutoff race's calendar
+        date where BOTH the driver and a teammate (same team *for that event*)
+        have a valid qualifying time, compute:
+
+            driver_best_time - teammate_best_time
+
+        (negative = driver was faster).  Rolling statistics are then taken
+        over the most recent valid comparisons only.
+
+        Handles: teammate changes (teammate resolved per-event via the
+        qualifying row's team_id), substitutions (any same-team driver with a
+        valid time counts), missing qualifying / disqualifications (rows
+        without a valid best time are skipped), and sprint qualifying (the
+        qualifying_results table only stores the Grand Prix qualifying
+        session, sourced from the race qualifying endpoint).
+        """
         cutoff_date = await _race_cutoff_date(self.db, race_id_cutoff)
         if cutoff_date is None:
             return {}
+
+        # The driver's own qualifying history before the cutoff, newest first.
         stmt = (
             select(QualifyingResult, Race.race_date)
             .join(Race, QualifyingResult.race_id == Race.id)
             .where(QualifyingResult.driver_id == driver_id, Race.race_date < cutoff_date)
             .order_by(Race.race_date.desc())
-            .limit(n_races)
         )
         res = await self.db.execute(stmt)
-        driver_qualis = res.all()
+        driver_rows = res.all()
+        if not driver_rows:
+            return self._teammate_stats([])
 
-        gaps = []
-        for dq in driver_qualis:
-            qr = dq.QualifyingResult
-            if qr.gap_to_pole_s is not None:
-                gaps.append(qr.gap_to_pole_s)
+        # One query for every event involved — no N+1.
+        race_ids = list({row.QualifyingResult.race_id for row in driver_rows})
+        tm_stmt = select(QualifyingResult).where(QualifyingResult.race_id.in_(race_ids))
+        tm_rows = (await self.db.execute(tm_stmt)).scalars().all()
+        by_race: Dict[str, List[QualifyingResult]] = {}
+        for q in tm_rows:
+            by_race.setdefault(q.race_id, []).append(q)
 
-        mean_gap = float(np.mean(gaps)) if gaps else np.nan
+        gaps: List[float] = []
+        for row in driver_rows:
+            dq = row.QualifyingResult
+            if dq.best_time_s is None:
+                continue  # no valid time (DNS / DSQ / missing data)
+            # Teammate = same team *for this event*, different driver.
+            teammates = [
+                t
+                for t in by_race.get(dq.race_id, [])
+                if t.driver_id != driver_id
+                and t.team_id == dq.team_id
+                and t.best_time_s is not None
+            ]
+            if not teammates:
+                continue  # teammate change with no same-event comparison, or missing data
+            teammate_time = float(np.mean([t.best_time_s for t in teammates]))
+            gaps.append(float(dq.best_time_s) - teammate_time)
 
+        return self._teammate_stats(gaps, n_races=n_races)
+
+    @staticmethod
+    def _teammate_stats(gaps: List[float], n_races: int = 3) -> Dict[str, Any]:
+        """Rolling statistics over newest-first teammate gap list."""
+        g_n = gaps[:n_races]
+        g5 = gaps[:5]
+        if not gaps:
+            return {
+                "driver_quali_vs_teammate_3": np.nan,
+                "driver_quali_vs_teammate_5_mean": np.nan,
+                "driver_quali_vs_teammate_5_median": np.nan,
+                "driver_quali_vs_teammate_5_std": np.nan,
+                "driver_teammate_q_h2h_win_rate": np.nan,
+                "driver_teammate_q_comparisons": 0.0,
+            }
         return {
-            "driver_quali_vs_teammate_3": mean_gap,
+            # Negative = faster than teammate.  Primary model feature kept
+            # under its historical name for schema compatibility.
+            "driver_quali_vs_teammate_3": float(np.mean(g_n)) if g_n else np.nan,
+            "driver_quali_vs_teammate_5_mean": float(np.mean(g5)),
+            "driver_quali_vs_teammate_5_median": float(np.median(g5)),
+            "driver_quali_vs_teammate_5_std": float(np.std(g5)) if len(g5) > 1 else 0.0,
+            "driver_teammate_q_h2h_win_rate": float(np.mean([1.0 if g < 0 else 0.0 for g in g5])),
+            "driver_teammate_q_comparisons": float(len(gaps)),
         }
 
     @staticmethod

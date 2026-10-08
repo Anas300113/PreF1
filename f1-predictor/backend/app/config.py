@@ -37,6 +37,24 @@ class Settings(BaseSettings):
     feature_version: str = "v1.0"
     simulation_default_count: int = 10000
     simulation_max_count: int = 500000
+    # When True, production startup FAILS if any required model artifact is
+    # missing or fails checksum verification.  When False (dev default), the
+    # API still starts but every response explicitly reports model
+    # availability — heuristic fallback is never silently presented as ML.
+    require_trained_models: bool = False
+    # Model artifacts required at startup / for predictions.
+    required_models: str = "qualifying:v1.0,race_pace:v1.0,dnf:v1.0"
+
+    def required_model_list(self) -> list[dict[str, str]]:
+        """Parse required_models ('qualifying:v1.0,race_pace:v1.0') to list."""
+        out: list[dict[str, str]] = []
+        for entry in self.required_models.split(","):
+            entry = entry.strip()
+            if not entry:
+                continue
+            model_type, _, version = entry.partition(":")
+            out.append({"model_type": model_type.strip(), "version": version.strip() or "v1.0"})
+        return out
 
     model_config = SettingsConfigDict(
         env_file=".env",

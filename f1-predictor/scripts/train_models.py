@@ -51,7 +51,14 @@ async def main():
         registry.save_model(q_model, "qualifying", "v1.0", {
             "training_samples": len(X_quali),
             "training_cutoff": cutoff,
+            "training_data_cutoff": cutoff,
+            "feature_schema_version": settings.feature_version,
+            "training_seasons": [2018, 2024],
+            "validation_seasons": [],
+            "test_seasons": [],
             "target": "gap_to_pole_s",
+            "metrics": {},
+            "calibration_metrics": {},
         })
         print(f"Qualifying model trained on {len(X_quali)} samples")
 
@@ -62,7 +69,14 @@ async def main():
         registry.save_model(r_model, "race_pace", "v1.0", {
             "training_samples": len(X_pace),
             "training_cutoff": cutoff,
+            "training_data_cutoff": cutoff,
+            "feature_schema_version": settings.feature_version,
+            "training_seasons": [2018, 2024],
+            "validation_seasons": [],
+            "test_seasons": [],
             "target": "race_pace_index",
+            "metrics": {},
+            "calibration_metrics": {},
         })
         print(f"Race pace model trained on {len(X_pace)} samples")
 
@@ -72,8 +86,15 @@ async def main():
         registry.save_model(d_model, "dnf", "v1.0", {
             "training_samples": len(X_dnf),
             "training_cutoff": cutoff,
+            "training_data_cutoff": cutoff,
+            "feature_schema_version": settings.feature_version,
+            "training_seasons": [2018, 2024],
+            "validation_seasons": [],
+            "test_seasons": [],
             "target": "binary_dnf",
             "positive_rate": float(y_dnf.mean()),
+            "metrics": {},
+            "calibration_metrics": {},
         })
         print(f"DNF model trained on {len(X_dnf)} samples")
 

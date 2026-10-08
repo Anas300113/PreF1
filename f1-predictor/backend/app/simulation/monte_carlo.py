@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import numpy as np
 import time
 from app.simulation.stochastic_model import StochasticFactors
@@ -27,6 +27,11 @@ class MonteCarloResult:
     position_distributions: np.ndarray
     pairwise_finish_matrix: np.ndarray  # D×D: P(driver_i finishes ahead of driver_j)
     convergence_report: dict  # simulation stability metrics
+    # Per-simulation sampled outcomes (N×D).  Only populated when the caller
+    # requests retain_samples=True (e.g. championship simulation, which must
+    # propagate individual sampled race results rather than expected values).
+    sampled_positions: Optional[np.ndarray] = None  # int16, finishing position per sim
+    sampled_points: Optional[np.ndarray] = None     # float32, points scored per sim
 
 class MonteCarloEngine:
     """High-performance Monte Carlo simulation engine."""
@@ -43,6 +48,8 @@ class MonteCarloEngine:
         n_simulations: int = 10000,
         seed: int = 42,
         safety_car_prob: float = 0.50,
+        points_table: Optional[np.ndarray] = None,
+        retain_samples: bool = False,
     ) -> MonteCarloResult:
         start_time = time.perf_counter()
         rng = np.random.default_rng(seed)
@@ -61,7 +68,8 @@ class MonteCarloEngine:
             race_laps=race_laps,
             is_wet=is_wet,
             circuit_deg_index=circuit_deg_index,
-            rng=rng
+            rng=rng,
+            points_table=points_table,
         )
 
         runtime = time.perf_counter() - start_time
@@ -71,7 +79,9 @@ class MonteCarloEngine:
         podium_p = np.mean(positions <= 3, axis=0)
         top5_p = np.mean(positions <= 5, axis=0)
         top10_p = np.mean(positions <= 10, axis=0)
-        points_p = np.mean((positions <= 10) & (~dnfs), axis=0)
+        # Points-scoring probability derived from actual points so custom
+        # tables (e.g. sprint 8-7-6-5-4-3-2-1) are handled correctly.
+        points_p = np.mean(points > 0, axis=0)
         dnf_p = np.mean(dnfs, axis=0)
 
         exp_pos = np.mean(positions, axis=0)
@@ -132,4 +142,6 @@ class MonteCarloEngine:
             position_distributions=pos_dist,
             pairwise_finish_matrix=pairwise,
             convergence_report=convergence_report,
+            sampled_positions=positions.astype(np.int16) if retain_samples else None,
+            sampled_points=points.astype(np.float32) if retain_samples else None,
         )

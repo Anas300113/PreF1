@@ -73,6 +73,11 @@ class ModelMetadataSchema(BaseModel):
     feature_version: str
     created_at: str
     runtime_seconds: Optional[float] = None
+    # Provenance / train-serve transparency (optional for older payloads).
+    prediction_cutoff_timestamp: Optional[str] = None
+    inference_backend: Optional[str] = None       # "xgboost" | "mixed" | "heuristic"
+    components: Optional[Dict[str, Any]] = None   # per-model backend + checksum status
+    model_unavailable: Optional[bool] = None
 
 class PredictionResponseSchema(BaseModel):
     race: RaceSchema
@@ -103,4 +108,6 @@ class HealthResponse(BaseModel):
     version: str
     model_version: str
     db_status: str
+    models_available: Optional[bool] = None
+    models: Optional[Dict[str, Any]] = None
     timestamp: str
