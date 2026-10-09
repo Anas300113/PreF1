@@ -135,19 +135,46 @@ The suite includes regression guards for the championship Monte Carlo (sampled r
 
 ## Configuration
 
-Environment variables (`.env`):
+Environment variables (`.env` or process env — names only):
 
-```
-DATABASE_URL=sqlite+aiosqlite:///./data/db/f1_predictor.db
-MODEL_VERSION=xgb-mc-v1
-SIMULATION_DEFAULT_COUNT=10000
-LOG_LEVEL=INFO
-```
+| Name | Purpose |
+|------|---------|
+| `DATABASE_URL` | SQLAlchemy URL (default local SQLite `./data/db/f1_predictor.db`) |
+| `MODELS_DIR` | Model artifact root (default `./models/trained`) |
+| `REQUIRE_TRAINED_MODELS` | `true` = fail closed on artifact failure; `false` = degraded + explicit `model_unavailable` |
+| `REQUIRED_MODELS` | Comma list `qualifying:v1.0,race_pace:v1.0,dnf:v1.0` |
+| `CORS_ORIGINS` | Comma-separated browser origins; `*` (default) disables credentialed CORS |
+| `LOG_LEVEL` | `INFO`/`DEBUG` |
+| `SIMULATION_DEFAULT_COUNT` / `SIMULATION_MAX_COUNT` | Monte Carlo defaults and hard cap |
+| `MODEL_VERSION` / `FEATURE_VERSION` | Prediction provenance labels |
+| `API_RATE_LIMIT_JOLPICA` / `JOLPICA_BASE_URL` | Jolpica client throttle + endpoint |
+| `OPENF1_API_KEY` | Optional OpenF1 key (never committed) |
+| `FASTF1_CACHE_DIR` / `DATA_RAW_DIR` | Local cache/data directories |
+| `VITE_API_URL` | (frontend build) `/api` proxy target, e.g. `http://backend:8000` |
 
 SQLite is the default; swap `DATABASE_URL` for PostgreSQL when scaling.
 
 Artifacts are stored under `models/trained/`; metadata (`models/trained/metadata/<type>_<version>.json`) carries the SHA-256 checksum.
-Production startup verifies each artifact from `require_trained_models`; missing or corrupt artifacts raise (or, with `REQUIRE_TRAINED_MODELS=false`, start in a degraded mode that attaches `app.state.model_status` and reports `model_unavailable` per prediction — never a silent heuristic fall-back).
+Production startup verifies each artifact from `required_models`; missing or corrupt artifacts raise (or, with `REQUIRE_TRAINED_MODELS=false`, start in a degraded mode that attaches `app.state.model_status` and reports `model_unavailable` per prediction — never a silent heuristic fall-back).
+
+## Deployment
+
+```bash
+# 1. Train/verify artifacts (required before REQUIRE_TRAINED_MODELS=true)
+python scripts/train_models.py
+
+# 2. Backend + frontend containers (proxies /api via VITE_API_URL)
+docker compose up --build
+
+# 3. Health gate — expect {"status":"ok","models_available":true}
+curl http://localhost:8000/api/health
+```
+
+Rollback: containers are stateless; data lives in the mounted `./data`
+volume and artifacts in `./models`. To roll back, check out the previous
+commit, rebuild (`docker compose up --build`), and confirm `/api/health`.
+To revert a model, restore its `.joblib` + `.json` pair from backup and
+restart (the checksum gate refuses mismatched pairs).
 
 
 

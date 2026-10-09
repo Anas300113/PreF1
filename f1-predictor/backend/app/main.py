@@ -52,10 +52,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Wildcard + credentials is invalid per the CORS spec (browsers reject it)
+# and would let any origin make credentialed calls. Allow credentials only
+# when an explicit origin allow-list is configured.
+_cors_origins = settings.cors_origin_list()
+_allow_credentials = _cors_origins != ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_cors_origins,
+    allow_credentials=_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )

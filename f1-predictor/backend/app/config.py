@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     data_raw_dir: str = "./data/raw"
     models_dir: str = "./models/trained"
     log_level: str = "INFO"
+    # Comma-separated allowed browser origins. "*" (dev default) disables
+    # credentialed CORS (wildcard + credentials is forbidden by the spec).
+    # Set an explicit origin list in production to enable cookies/headers.
+    cors_origins: str = "*"
     api_rate_limit_jolpica: int = 4
     jolpica_base_url: str = "https://api.jolpi.ca/ergast/f1"
     open_meteo_forecast_url: str = "https://api.open-meteo.com/v1/forecast"
@@ -55,6 +59,11 @@ class Settings(BaseSettings):
             model_type, _, version = entry.partition(":")
             out.append({"model_type": model_type.strip(), "version": version.strip() or "v1.0"})
         return out
+
+    def cors_origin_list(self) -> list[str]:
+        """Parsed cors_origins; wildcard disables credentialed CORS."""
+        origins = [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        return origins or ["*"]
 
     model_config = SettingsConfigDict(
         env_file=".env",

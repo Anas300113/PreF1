@@ -1,5 +1,19 @@
 {
+  "model_id": "race_pace",
+  "model_version": "v1.0",
+  "training_date": "2026-10-08T21:06:10.205227+00:00",
+  "artifact_checksum_sha256": "20b93f345eff527c23f1e324d0497226cce4bd6f25e46f9e7dbd4fb30c2bf609",
   "training_samples": 2979,
-  "training_cutoff": "2026-09-12T09:52:44.871916+00:00",
-  "target": "race_pace_index"
+  "training_cutoff": "2026-10-08T21:06:09.564691+00:00",
+  "training_data_cutoff": "2026-10-08T21:06:09.564691+00:00",
+  "feature_schema_version": "v1.0",
+  "training_seasons": [
+    2018,
+    2024
+  ],
+  "validation_seasons": [],
+  "test_seasons": [],
+  "target": "race_pace_index",
+  "metrics": {},
+  "calibration_metrics": {}
 }

@@ -77,7 +77,7 @@ async def get_race_weather(race_id: str, db: AsyncSession = Depends(get_db), set
 async def get_prediction(
     race_id: str,
     sim_count: int = Query(10000, ge=1000, le=500000),
-    seed: int = Query(42),
+    seed: int = Query(42, ge=0),
     db: AsyncSession = Depends(get_db),
     settings=Depends(get_settings),
 ):

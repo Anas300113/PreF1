@@ -1,6 +1,20 @@
 {
+  "model_id": "dnf",
+  "model_version": "v1.0",
+  "training_date": "2026-10-08T21:06:10.358460+00:00",
+  "artifact_checksum_sha256": "52b8b9969189a9d6544facff679ce00e1be84ee38d230920acf03dc2f789fdd3",
   "training_samples": 2979,
-  "training_cutoff": "2026-09-12T09:52:44.871916+00:00",
+  "training_cutoff": "2026-10-08T21:06:09.564691+00:00",
+  "training_data_cutoff": "2026-10-08T21:06:09.564691+00:00",
+  "feature_schema_version": "v1.0",
+  "training_seasons": [
+    2018,
+    2024
+  ],
+  "validation_seasons": [],
+  "test_seasons": [],
   "target": "binary_dnf",
-  "positive_rate": 0.15273581738838538
+  "positive_rate": 0.15273581738838538,
+  "metrics": {},
+  "calibration_metrics": {}
 }

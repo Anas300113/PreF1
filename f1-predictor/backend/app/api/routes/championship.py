@@ -1,6 +1,6 @@
 from typing import List
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.simulation.race_simulator import RaceSimulator
 from app.simulation.strategy_engine import StrategyEngine
@@ -38,8 +38,8 @@ class ChampionshipRequest(BaseModel):
     season: int = 2025
     drivers: List[ChampionshipDriverInput]
     remaining_races: List[ChampionshipRaceInput]
-    n_simulations: int = 5000
-    seed: int = 42
+    n_simulations: int = Field(5000, ge=100, le=50000)
+    seed: int = Field(42, ge=0)
 
 
 @router.post("/simulate")

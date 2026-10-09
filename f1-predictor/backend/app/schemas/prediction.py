@@ -1,6 +1,6 @@
 from typing import Optional, List, Dict, Any
 from datetime import date, datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 class CircuitSchema(BaseModel):
     id: str
@@ -91,8 +91,8 @@ class PredictionResponseSchema(BaseModel):
     scenarios: Optional[Dict[str, Any]] = None
 
 class SimulationRequest(BaseModel):
-    simulation_count: int = 10000
-    seed: Optional[int] = 42
+    simulation_count: int = Field(10000, ge=1000, le=500000)
+    seed: Optional[int] = Field(42, ge=0)
     weather_override: Optional[str] = None  # 'dry', 'wet', 'mixed'
     safety_car_override: Optional[str] = None  # 'low', 'normal', 'high'
     tyre_deg_override: Optional[str] = None  # 'low', 'normal', 'high'
@@ -101,7 +101,7 @@ class ScenarioRequest(BaseModel):
     weather: str = "dry"
     safety_car: str = "normal"
     tyre_deg: str = "normal"
-    simulation_count: int = 10000
+    simulation_count: int = Field(10000, ge=1000, le=500000)
 
 class HealthResponse(BaseModel):
     status: str
