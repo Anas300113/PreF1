@@ -149,10 +149,13 @@ Environment variables (`.env` or process env — names only):
 | `MODEL_VERSION` / `FEATURE_VERSION` | Prediction provenance labels |
 | `API_RATE_LIMIT_JOLPICA` / `JOLPICA_BASE_URL` | Jolpica client throttle + endpoint |
 | `OPENF1_API_KEY` | Optional OpenF1 key (never committed) |
-| `FASTF1_CACHE_DIR` / `DATA_RAW_DIR` | Local cache/data directories |
+| `DATA_RAW_DIR` | Local raw-data directory |
 | `VITE_API_URL` | (frontend build) `/api` proxy target, e.g. `http://backend:8000` |
 
-SQLite is the default; swap `DATABASE_URL` for PostgreSQL when scaling.
+SQLite is the default for local development. For serverless deployment (where the
+filesystem is read-only and non-persistent) set `DATABASE_URL` to a managed
+PostgreSQL instance and seed it once with `scripts/seed_postgres.py` — see
+[Deployment](#deployment).
 
 Artifacts are stored under `models/trained/`; metadata (`models/trained/metadata/<type>_<version>.json`) carries the SHA-256 checksum.
 Production startup verifies each artifact from `required_models`; missing or corrupt artifacts raise (or, with `REQUIRE_TRAINED_MODELS=false`, start in a degraded mode that attaches `app.state.model_status` and reports `model_unavailable` per prediction — never a silent heuristic fall-back).
@@ -175,6 +178,68 @@ volume and artifacts in `./models`. To roll back, check out the previous
 commit, rebuild (`docker compose up --build`), and confirm `/api/health`.
 To revert a model, restore its `.joblib` + `.json` pair from backup and
 restart (the checksum gate refuses mismatched pairs).
+
+### Serverless deployment (Vercel)
+
+`vercel.json` at the repository root defines one project with two services:
+`backend` (FastAPI) and `frontend` (Vite). Public routing is top-level and
+ordered most-specific-first: `/api/(.*)` goes to `backend`, everything else to
+`frontend`. The frontend already calls the API through the relative `baseURL:
+'/api'`, so **no binding is required** — the two services never call each other
+server-side, and the browser reaches the API through the public rewrite. Had
+the backend needed to call the frontend, the binding would be declared on the
+*calling* service.
+
+Serverless functions have a **read-only, non-persistent** filesystem, so two
+things must be handled outside the function runtime:
+
+**1. Database — seed Postgres once, before deploying.** The SQLite file is
+git-ignored (regenerable) and cannot be written at request time. Point
+`DATABASE_URL` at a managed Postgres instance and hydrate it locally:
+
+```bash
+# 1. Create the schema and upsert every row (idempotent, safe to re-run)
+python scripts/seed_postgres.py --to "postgresql+asyncpg://USER:PW@HOST/DB"
+
+# 2. Add --truncate only when you want destination tables cleared first
+```
+
+Requires `asyncpg` (already in `requirements.txt`). All API routes are
+read-only, so the deployed service never needs to write.
+
+**2. Model artifacts — `REQUIRE_TRAINED_MODELS=false` is not production-ready.**
+The `.joblib` artifacts are git-ignored, so a fresh deploy starts *degraded* and
+reports `model_unavailable` on every prediction (never a silent heuristic
+fall-back). Either commit the artifacts, or mount them from object storage and
+set `MODELS_DIR` accordingly. Then set `REQUIRE_TRAINED_MODELS=true` so startup
+fails closed on a missing or checksum-mismatched artifact.
+
+**3. Bundle size.** The Python dependency set (`xgboost`, `scipy`,
+`scikit-learn`, `shap`) is ~450 MB unpacked, far above Vercel's standard 250 MB
+function limit. Set the environment variable below in the project to opt the
+function into the 5 GB Large Functions beta (new projects are enrolled
+automatically; existing ones must opt in):
+
+```
+VERCEL_SUPPORT_LARGE_FUNCTIONS=1
+```
+
+Large Functions require Fluid compute and are incompatible with Secure Compute
+and Static IPs.
+
+Trim the bundle where possible. Dead weight has already been removed: `fastf1`
+was imported by nothing, so it is gone from `requirements.txt` along with its
+~8.6 MB of transitive dependencies. Note that this does **not** shed
+`numba`/`llvmlite` (~142 MB) or `matplotlib` — `shap` hard-depends on `numba`,
+which depends on `llvmlite`, so those stay. The remaining ~628 MB is dominated
+by `xgboost` (170 MB), `llvmlite` (116 MB), `scipy` (112 MB) and `pandas`
+(63 MB), all of which the prediction and explain paths genuinely need. If the
+bundle must shrink further, `/api/explain` (the only `shap` consumer) is the
+next thing to examine.
+
+Test the whole multi-service topology locally with `vercel dev`, which runs all
+services together and injects binding variables.
+
 
 
 

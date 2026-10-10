@@ -18,6 +18,20 @@ data/db/*.db
 data/cache/
 logs/*.log
 
-# Trained model artifacts (verify/register instead of committing)
-models/trained/
+# Trained model artifacts.
+# The .joblib/.ubj binaries are committed via Git LFS (see .gitattributes) so a
+# serverless build ships working predictors; the rest of the directory stays
+# ignored. Negations require the directory not to be excluded outright, hence
+# `models/trained/*` instead of `models/trained/`.
+models/trained/*
+!models/trained/metadata/
+!models/trained/*.joblib
+!models/trained/*.ubj
+
+# Node / frontend build output. Rebuilt by `npm run build` on every Vercel
+# deployment, so it must not be committed. (The root .gitignore has a
+# `frontend/dist/` rule, but that is anchored at the repo root and therefore
+# does NOT match this nested `f1-predictor/frontend/dist/` path.)
+frontend/dist/
+frontend/node_modules/
 

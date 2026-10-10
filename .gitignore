@@ -23,8 +23,17 @@ data/raw/
 # Logs
 logs/
 
-# Trained models (regenerable via scripts/train_models.py)
-models/trained/
+# Trained models.
+# Model artifacts are committed through Git LFS (see .gitattributes) so that a
+# Vercel build contains real predictors instead of falling back to heuristics.
+# Everything else under models/trained stays ignored; metadata JSON is tracked
+# as a normal file. The directory itself must not be excluded wholesale, or git
+# would refuse the `!` negations below ("cannot re-include under an excluded
+# directory"), hence `models/trained/*` rather than `models/trained/`.
+models/trained/*
+!models/trained/metadata/
+!models/trained/*.joblib
+!models/trained/*.ubj
 *.joblib
 *.ubj
 *.json.xz

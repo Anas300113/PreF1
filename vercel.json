@@ -1,0 +1,25 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "backend": {
+      "root": "f1-predictor/backend",
+      "framework": "fastapi",
+      "entrypoint": "app.main:app",
+      "installCommand": "pip install -r ../requirements.txt"
+    },
+    "frontend": {
+      "root": "f1-predictor/frontend",
+      "framework": "vite"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": { "service": "backend" }
+    },
+    {
+      "source": "/(.*)",
+      "destination": { "service": "frontend" }
+    }
+  ]
+}

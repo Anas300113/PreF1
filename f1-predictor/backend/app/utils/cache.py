@@ -4,10 +4,25 @@ import time
 from pathlib import Path
 from typing import Any, Optional
 
+from app.utils.logging_config import get_logger
+
+logger = get_logger("disk_cache")
+
 class DiskCache:
     def __init__(self, cache_dir: str = "./data/cache", default_ttl_seconds: int = 3600):
         self.cache_dir = Path(cache_dir)
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        # On serverless platforms (e.g. Vercel Functions) the bundle filesystem
+        # is read-only at request time. Creating the cache directory must not
+        # abort startup there: set() already swallows write failures, so a
+        # cache that cannot be materialised degrades to a pure cache miss
+        # (every request goes upstream) rather than an error.
+        try:
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            logger.debug(
+                "Cache directory %s is not writable; running without a disk cache",
+                self.cache_dir,
+            )
         self.default_ttl = default_ttl_seconds
 
     def _get_path(self, key: str) -> Path:
