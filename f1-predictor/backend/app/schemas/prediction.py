@@ -66,6 +66,10 @@ class WeatherSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class ModelMetadataSchema(BaseModel):
+    # "model_*" field names (model_unavailable, ...) are part of the API contract,
+    # so opt out of pydantic's protected "model_" namespace.
+    model_config = ConfigDict(protected_namespaces=())
+
     version: str
     training_cutoff: str
     simulation_count: int
@@ -104,6 +108,9 @@ class ScenarioRequest(BaseModel):
     simulation_count: int = Field(10000, ge=1000, le=500000)
 
 class HealthResponse(BaseModel):
+    # "model_version" is part of the API contract; opt out of the protected "model_" namespace.
+    model_config = ConfigDict(protected_namespaces=())
+
     status: str
     version: str
     model_version: str
