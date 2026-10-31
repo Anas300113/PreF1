@@ -65,9 +65,15 @@ class ModelRegistry:
 
     def __init__(self, models_dir: str = "./models/trained"):
         self.models_dir = Path(models_dir)
-        self.models_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            self.models_dir.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass
         self.meta_dir = self.models_dir / "metadata"
-        self.meta_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            self.meta_dir.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass
 
     # ------------------------------------------------------------------
     # Paths

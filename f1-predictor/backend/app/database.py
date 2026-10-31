@@ -45,8 +45,11 @@ async def init_db() -> None:
     # read-only role or race across concurrent invocations. SQLite dev/CI keeps
     # the convenience of automatic schema creation.
     if settings.database_url.startswith("sqlite"):
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("SQLite schema init skipped (read-only fs?): %s", exc)
     else:
         logger.info(
             "Skipping create_all on non-sqlite DATABASE_URL; "
