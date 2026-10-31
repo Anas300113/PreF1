@@ -4,8 +4,7 @@
     "backend": {
       "root": "f1-predictor/backend",
       "framework": "fastapi",
-      "entrypoint": "app.main:app",
-      "installCommand": "pip install -r ../requirements.txt"
+      "entrypoint": "app.main:app"
     },
     "frontend": {
       "root": "f1-predictor/frontend",
